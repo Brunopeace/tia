@@ -1,61 +1,171 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Feliz Aniversário, Meu Amor</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(to right, #ffdde1, #ee9ca7);
-      font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .card {
-      background: white;
-      border-radius: 20px;
-      padding: 20px;
-      max-width: 420px;
-      text-align: center;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      overflow: hidden;
-    }
-    .card img {
-      width: 57%;
-      border-radius: 15px;
-      margin-bottom: 20px;
-    }
-    .card h1 {
-      color: #d94f70;
-      font-size: 26px;
-      margin-bottom: 10px;
-    }
-    .card p {
-      font-size: 16px;
-      color: #333;
-      margin-bottom: 15px;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Surpresa 🎁</title>
 
-  </style>
+<style>
+:root{
+  --primary:#ff2f68;
+  --secondary:#ff6f91;
+  --bg:#f2f3f7;
+}
+
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
+
+body{
+  margin:0;
+  height:100vh;
+  background:var(--bg);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Container */
+.app{
+  width:100%;
+  max-width:380px;
+  padding:30px 20px;
+  text-align:center;
+}
+
+/* Envelope box */
+.envelope-box{
+  position:relative;
+  width:290px;
+  height:220px;
+  margin:0 auto;
+  cursor:pointer;
+}
+
+/* Envelope body (MÁSCARA) */
+.envelope{
+  position:absolute;
+  inset:0;
+  background:var(--primary);
+  border-radius:16px;
+  overflow:hidden; /* 🔑 ISSO ESCONDE A CARTA */
+  box-shadow:0 15px 30px rgba(0,0,0,.3);
+  z-index:2;
+}
+
+/* Dobras inferiores */
+.envelope::before,
+.envelope::after{
+  content:"";
+  position:absolute;
+  bottom:0;
+  width:0;
+  height:0;
+  border-style:solid;
+}
+
+.envelope::before{
+  left:0;
+  border-width:90px 0 0 140px;
+  border-color:transparent transparent transparent var(--secondary);
+}
+
+.envelope::after{
+  right:0;
+  border-width:90px 140px 0 0;
+  border-color:transparent var(--secondary) transparent transparent;
+}
+
+/* Aba */
+.flap{
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:#e81f5a;
+  clip-path:polygon(0 0,50% 55%,100% 0);
+  transform-origin:top;
+  transition:transform .8s ease;
+  z-index:2;
+}
+
+/* Carta (COMEÇA ESCONDIDA) */
+.card{
+  position:absolute;
+  bottom:10px;
+  left:50%;
+  transform:translate(-50%, 120%);
+  width:88%;
+  background:#fff;
+  border-radius:14px;
+  padding:18px;
+  text-align:center;
+  box-shadow:0 10px 25px rgba(0,0,0,.25);
+  transition:transform 1s cubic-bezier(.4,0,.2,1);
+  z-index:3;
+}
+
+.card h1{
+  margin:5px 0;
+  color:var(--primary);
+  font-size:18px;
+}
+
+.card p{
+  margin:8px 0;
+  font-size:14px;
+  color:#333;
+}
+
+/* Abrir */
+.envelope-box.open .flap{
+  transform:rotateX(180deg);
+}
+
+.envelope-box.open .card{
+  transform:translate(-50%, -20%);
+}
+
+/* Dica */
+.hint{
+  margin-top:20px;
+  font-size:14px;
+  color:#666;
+}
+</style>
 </head>
+
 <body>
-  <div class="card">
-    <img src="juntosempre.jpg" alt="Sempre juntos" />
-    <h1>Feliz Aniversário, Meu Amor!</h1>
-    <p>
-      Parabéns pelo seu dia, que ele seja tão especial quanto você é para mim. Que venham muitos outros aniversários, muitos outros sonhos, e que este amor continue crescendo e florescendo, sempre.
-    </p>
-    <p>
-      Te amo hoje, te amei ontem, e vou te amar para sempre.
-    </p>
-    <p>
-      Que esse novo ciclo venha repleto de saúde, sorrisos e realizações. Estarei sempre ao seu lado, te amando cada vez mais.
-    </p>
+
+<div class="app">
+  <div class="envelope-box" onclick="abrir()">
+    <div class="envelope">
+      <!-- CARTA FICA DENTRO DA MÁSCARA -->
+      <div class="card">
+        <h1>🎉 Feliz Aniversário</h1>
+        <p><strong>Kelven</strong>,</p>
+        <p>
+          Que seu dia seja cheio de alegria,  
+          saúde e momentos inesquecíveis.
+        </p>
+        <p>✨ FELIZ ANIVERSÁRIO ✨</p>
+      </div>
+    </div>
+
+    <div class="flap"></div>
   </div>
+
+  <div class="hint">Toque no envelope</div>
+</div>
+
+<script>
+function abrir(){
+  document.querySelector('.envelope-box').classList.toggle('open');
+}
+</script>
+
 </body>
 </html>
