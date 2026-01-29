@@ -1,368 +1,42 @@
+const { onValueCreated } = require("firebase-functions/v2/database");
+const admin = require("firebase-admin");
 
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Surpresa de Natal</title>
-    <style>
-        :root {
-            --cor-envelope: #c0392b;
-            --cor-envelope-interna: #a93226;
-            --cor-carta: #fffcf2;
-            --cor-natal: #2d5a27;
-        }
+admin.initializeApp();
 
-        body {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-    font-family: 'Georgia', serif;
-    overflow: hidden; /* Importante para a neve não gerar barras de rolagem */
-    
-    /* Novo fundo noturno e misterioso */
-    background: radial-gradient(circle at top, #1a2a3a 0%, #000000 100%); /* Azul escuro no topo, escurecendo para preto */
-    position: relative; /* Necessário para posicionar a neve */
-}
+// Esta função vigia o banco e envia o push automaticamente
+exports.notificarNovoPedido = onValueCreated("/pedidos/{pedidoId}", async (event) => {
+    const pedido = event.data.val();
+    const nomeCliente = pedido.cliente || "Novo Cliente";
+    const valorTotal = pedido.total || 0;
 
+    // 1. Busca os tokens dos administradores no banco
+    const tokensSnapshot = await admin.database().ref("tokens_adm").once("value");
+    const tokensData = tokensSnapshot.val();
 
-
-        /* Container do Envelope */
-        .envelope-wrapper {
-            position: relative;
-            cursor: pointer;
-        }
-
-        .envelope {
-            position: relative;
-            width: 300px;
-            height: 200px;
-            background-color: var(--cor-envelope);
-            border-bottom-left-radius: 10px;
-            border-bottom-right-radius: 10px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-        }
-
-        /* Parte frontal do envelope (triângulos) */
-        .envelope::before {
-            content: "";
-            position: absolute;
-            z-index: 2;
-            border-top: 100px solid transparent;
-            border-left: 150px solid #e74c3c;
-            border-right: 150px solid #e74c3c;
-            border-bottom: 100px solid #d44233;
-            bottom: 0;
-            border-bottom-left-radius: 10px;
-            border-bottom-right-radius: 10px;
-        }
-
-        /* Aba superior */
-        .aba {
-            position: absolute;
-            top: 0;
-            width: 0;
-            height: 0;
-            border-top: 110px solid var(--cor-envelope-interna);
-            border-left: 150px solid transparent;
-            border-right: 150px solid transparent;
-            transform-origin: top;
-            transition: transform 0.4s ease;
-            z-index: 3;
-        }
-
-        /* A Carta */
-        .carta {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            width: 280px;
-            height: 180px;
-            background-color: var(--cor-carta);
-            padding: 20px;
-            box-sizing: border-box;
-            transition: transform 0.6s ease;
-            z-index: 1;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            border: 2px solid #d4af37;
-        }
-
-        .carta p {
-            font-size: 16px;
-            color: #333;
-            line-height: 1.4;
-            margin: 0;
-        }
-
-        .carta .destaque {
-            color: var(--cor-natal);
-            font-weight: bold;
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-
-        /* Efeito de Hover/Interação */
-        .envelope-wrapper:hover .aba {
-            transform: rotateX(180deg);
-            z-index: 0;
-        }
-
-        .envelope-wrapper:hover .carta {
-            transform: translateY(-130px);
-            z-index: 2;
-        }
-
-        /* Selo de Cera */
-        .selo {
-            position: absolute;
-            bottom: 80px;
-            left: 135px;
-            width: 30px;
-            height: 30px;
-            background: #d4af37;
-            border-radius: 50%;
-            z-index: 4;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-size: 18px;
-        }
-        
-        .envelope-wrapper:hover .selo {
-            opacity: 0;
-            transition: 0.2s;
-        }
-        
-        /* Estilização do Footer */
-.footer-bruno {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding: 12px 30px;
-    border-radius: 50px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-    transition: all 0.3s ease;
-    z-index: 100;
-}
-
-.footer-bruno:hover {
-    transform: translateX(-50%) translateY(-5px);
-    background: rgba(255, 255, 255, 0.25);
-    box-shadow: 0 12px 40px 0 rgba(192, 57, 43, 0.2); /* Sombra no tom do envelope */
-}
-
-.footer-content {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-}
-
-.made-by {
-    color: #ffffff;
-    font-size: 14px;
-    letter-spacing: 0.5px;
-}
-
-.dev-name {
-    font-weight: 800;
-    text-transform: uppercase;
-    font-size: 15px;
-    background: linear-gradient(45deg, #c0392b, #2d5a27, #d4af37);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: shine 3s linear infinite;
-}
-
-.heart {
-    display: inline-block;
-    color: #e74c3c;
-    animation: pulse 1.5s ease infinite;
-}
-
-/* Linha decorativa abaixo */
-.footer-bottom-line {
-    width: 0%;
-    height: 2px;
-    background: #d4af37;
-    margin: 4px auto 0;
-    transition: width 0.4s ease;
-    border-radius: 2px;
-}
-
-.footer-bruno:hover .footer-bottom-line {
-    width: 80%;
-}
-
-/* Animações */
-@keyframes shine {
-    to { background-position: 200% center; }
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
-}
-
-/* Efeito de Neve Caindo */
-.snowflakes {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none; /* Garante que você ainda pode interagir com o envelope */
-    z-index: 50; /* Garante que a neve fica acima do fundo, mas abaixo do envelope */
-}
-
-.snowflake {
-    color: #fff;
-    font-size: 1em; /* Tamanho do floco de neve */
-    font-family: Arial, sans-serif;
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); /* Pequeno brilho */
-    position: absolute;
-    top: -10%; /* Começa acima da tela */
-    animation: fall linear infinite;
-    opacity: 0.8;
-}
-
-/* Criando diferentes tamanhos e velocidades para um efeito mais natural */
-.snowflake:nth-child(even) {
-    font-size: 1.2em;
-    animation-duration: 15s;
-    animation-delay: 0s;
-}
-
-.snowflake:nth-child(odd) {
-    font-size: 0.9em;
-    animation-duration: 20s;
-    animation-delay: 2s;
-}
-
-.snowflake:nth-child(3n) {
-    font-size: 1.5em;
-    animation-duration: 18s;
-    animation-delay: 4s;
-    opacity: 0.7;
-}
-
-.snowflake:nth-child(4n) {
-    font-size: 0.8em;
-    animation-duration: 22s;
-    animation-delay: 6s;
-    opacity: 0.9;
-}
-
-/* Posições aleatórias iniciais para os flocos de neve */
-.snowflake:nth-child(1) { left: 5%; animation-duration: 18s; animation-delay: 0s;}
-.snowflake:nth-child(2) { left: 15%; animation-duration: 22s; animation-delay: 2s;}
-.snowflake:nth-child(3) { left: 25%; animation-duration: 16s; animation-delay: 4s;}
-.snowflake:nth-child(4) { left: 35%; animation-duration: 20s; animation-delay: 6s;}
-.snowflake:nth-child(5) { left: 45%; animation-duration: 17s; animation-delay: 8s;}
-.snowflake:nth-child(6) { left: 55%; animation-duration: 21s; animation-delay: 10s;}
-.snowflake:nth-child(7) { left: 65%; animation-duration: 19s; animation-delay: 12s;}
-.snowflake:nth-child(8) { left: 75%; animation-duration: 23s; animation-delay: 14s;}
-.snowflake:nth-child(9) { left: 85%; animation-duration: 15s; animation-delay: 16s;}
-.snowflake:nth-child(10) { left: 95%; animation-duration: 20s; animation-delay: 18s;}
-
-
-/* Animação de queda da neve */
-@keyframes fall {
-    0% { transform: translateY(-10%) rotate(0deg); opacity: 0.8; }
-    100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-}
-
-
-.instrucao-clique {
-    margin-top: 50px; /* Espaço entre o envelope e o texto */
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    font-weight: 300;
-    letter-spacing: 4px;
-    font-size: 1.2rem;
-    color: #d4af37; /* Dourado natalino */
-    text-align: center;
-    text-transform: uppercase;
-    
-    /* Sombra suave para dar profundidade e brilho */
-    text-shadow: 0 0 10px rgba(212, 175, 55, 0.5), 
-                 0 0 20px rgba(212, 175, 55, 0.2);
-    
-    /* Animação suave para convidar ao clique */
-    animation: floatingText 3s ease-in-out infinite;
-    cursor: default;
-    user-select: none;
-    z-index: 10;
-}
-
-@keyframes floatingText {
-    0%, 100% {
-        transform: translateY(0);
-        opacity: 0.7;
-        text-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+    if (!tokensData) {
+        console.log("Nenhum token de ADM encontrado.");
+        return null;
     }
-    50% {
-        transform: translateY(-5px);
-       opacity: 1;
-       text-shadow: 0 0 20px rgba(212, 175, 55, 0.8), 
-       0 0 30px rgba(212, 175, 55, 0.4);
+
+    const tokens = Object.values(tokensData).map(item => item.token);
+
+    // 2. Monta a mensagem para o Google
+    const message = {
+        notification: {
+            title: "🥟 NOVO PEDIDO CHEGOU!",
+            body: `Cliente: ${nomeCliente}\nTotal: R$ ${valorTotal.toFixed(2)}`,
+        },
+        data: {
+            url: "https://brunopeace.github.io/SALGADOS/paineladm.html"
+        },
+        tokens: tokens, 
+    };
+
+    // 3. Envia via Firebase Cloud Messaging
+    try {
+        const response = await admin.messaging().sendEachForMulticast(message);
+        console.log("Sucesso:", response.successCount, "Falhas:", response.failureCount);
+    } catch (error) {
+        console.error("Erro ao enviar push:", error);
     }
-}
-
-    </style>
-</head>
-<body>
-    
-    <div class="snowflakes" aria-hidden="true">
-  <div class="snowflake">❅</div>
-  <div class="snowflake">❅</div>
-  <div class="snowflake">❆</div>
-  <div class="snowflake">❄</div>
-  <div class="snowflake">❅</div>
-  <div class="snowflake">❆</div>
-  <div class="snowflake">❄</div>
-  <div class="snowflake">❅</div>
-  <div class="snowflake">❆</div>
-  <div class="snowflake">❄</div>
-</div>
-
-
-    <div class="envelope-wrapper">
-        <div class="aba"></div>
-        <div class="envelope">
-            <div class="selo">❄</div>
-        </div>
-        <div class="carta">
-<div class="destaque">🎄 Feliz Natal, tia!</div>
-            <p>Passando para desejar um dia iluminado, cheio de saúde e rodeado de quem você ama. Que o novo ano traga muitas bênçãos!</p>
- <div style="margin-top: 10px; font-size: 12px; color: #d4af37;">✨ Com carinho ✨</div>
-        </div>
-    </div>
-<h1 class="instrucao-clique">CLIQUE NO ENVELOPE</h1>
-    <footer class="footer-bruno">
-    <div class="footer-content">
-        <span class="made-by">Desenvolvido com 
-            <span class="heart">❤️</span> por 
-        </span>
-        <span class="dev-name">Bruno Silva</span>
-    </div>
-    <div class="footer-bottom-line"></div>
-</footer>
-</body>
-</html>
+});
